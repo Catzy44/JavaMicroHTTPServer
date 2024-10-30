@@ -2,10 +2,11 @@
 
 ##How to initialize the server:
 
+```
 HttpServer server = new HttpServer(80); //REPLACE 80 WITH YOUR CHOOSEN PORT!
 //server.setDebug(true); //THIS PRINTS DEBUG INFORMATION INTO SYSTEM STDOUT (CONSOLE)
 server.start(); //starts the server thread (ASYNC!!) (ITS NOT STOPING YOUR CODE!)
-
+```
 
 ##How to make the server actually return something:
 ```
