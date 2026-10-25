@@ -1,4 +1,4 @@
-package me.catzy;
+package me.kotsu.microHTTPServer;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 
@@ -27,6 +28,29 @@ import com.google.gson.JsonObject;
 
 
 public class HttpServer {
+	private static final Logger LOGGER = Logger.getLogger(HttpServer.class.getName());
+
+	private void logRequest(Socket socket, String input) {
+		StringBuilder line = new StringBuilder();
+		if (input == null) {
+			line.append("<EOF: connection closed without request>");
+		} else {
+			int limit = Math.min(input.length(), 256);
+			for (int i = 0; i < limit; i++) {
+				char c = input.charAt(i);
+				if (Character.isISOControl(c) || Character.getType(c) == Character.FORMAT) {
+					line.append(String.format("\\u%04x", (int) c));
+				} else {
+					line.append(c);
+				}
+			}
+			if (input.length() > limit) {
+				line.append("...[truncated]");
+			}
+		}
+		LOGGER.info("[EndiManager HTTP] port=" + port + " remote="
+				+ socket.getRemoteSocketAddress() + " request=\"" + line + "\"");
+	}
 
 	private ServerSocket serverConnect = null;
 	private List<HttpServerAction> actions = new ArrayList<>();
@@ -55,8 +79,14 @@ public class HttpServer {
 	}
 	
 	private boolean debug = false;
+
+	/** Prints exception stack traces to stdout when a request handler fails. */
 	public void setDebug(boolean d) {
 		debug = d;
+	}
+
+	public boolean isDebug() {
+		return debug;
 	}
 	
 	public void start() {
@@ -83,14 +113,26 @@ public class HttpServer {
 									bos = new BufferedOutputStream(socket.getOutputStream());// for data
 
 									String input = in.readLine();
+									logRequest(socket, input);
+									if (input == null) {
+										return; // Client closed the connection without sending a request.
+									}
 									StringTokenizer parse = new StringTokenizer(input);
+									if (parse.countTokens() != 3) {
+										throwError(pw, bos, "400 Bad Request");
+										return;
+									}
 									String method = parse.nextToken().toUpperCase(); // HTTP method
 									String fileRequested = parse.nextToken().toLowerCase(); // file
-
-									
+									String protocol = parse.nextToken();
+									if (!protocol.equals("HTTP/1.0") && !protocol.equals("HTTP/1.1")) {
+										throwError(pw, bos, "400 Bad Request");
+										return;
+									}
 
 									if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
 										throwError(pw, bos, "501 Not Implemented");
+										return;
 									}
 
 									byte[] fileData = null;
@@ -256,13 +298,13 @@ public class HttpServer {
 	}
 
 	private void throwError(PrintWriter out, OutputStream dataOut, String error) throws IOException {
-		byte[] fileData = ("{\"status\":\"err\",\"value\",\"" + error + "\"}").getBytes(Charset.forName("UTF-8"));
+		byte[] fileData = ("{\"status\":\"err\",\"value\":\"" + error + "\"}").getBytes(Charset.forName("UTF-8"));
 		int fileLength = fileData.length;
 
 		out.println("HTTP/1.1 " + error);
 		out.println("Server: EndiMC statistics web server v1.0");
 		out.println("Date: " + new Date());
-		out.println("Content-type: " + "text/plain");
+		out.println("Content-type: application/json; charset=UTF-8");
 		out.println("Content-length: " + fileLength);
 		out.println();
 		out.flush();

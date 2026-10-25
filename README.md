@@ -40,3 +40,14 @@ server.addAction(new HttpServerAction("/image") {
 });
 ```
 so client can just open in his browser: ```127.0.0.1:80/image``` and he will get that image (as preview or download, depends on the browser)
+## Gradle
+
+Requires Java 25. Build with `./gradlew build` (`gradlew.bat build` on Windows).
+Sources are in `src/main/java/me/kotsu/microHTTPServer`; the package matches the
+version extracted from EndiManager, including request logging and form parsing.
+Gson is supplied by the host application (Paper supplies it for EndiManager).
+
+Publish to the local Maven repository with `./gradlew publishToMavenLocal`
+(`gradlew.bat publishToMavenLocal` on Windows). Consumers use `mavenLocal()` and
+`implementation 'me.catzy:JavaMicroHTTPServer:1.0.0'`.
+EndiManager embeds this dependency in its plugin JAR.

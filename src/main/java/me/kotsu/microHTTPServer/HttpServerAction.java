@@ -1,4 +1,4 @@
-package me.catzy;
+package me.kotsu.microHTTPServer;
 
 import java.io.BufferedReader;
 

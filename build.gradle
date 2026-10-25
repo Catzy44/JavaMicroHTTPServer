@@ -1,0 +1,39 @@
+plugins {
+	id 'java-library'
+	id 'maven-publish'
+}
+
+group = 'me.catzy'
+version = '1.0.0'
+description = 'Super easy to use and yet powerful HTTP (no S!) server to use in your code.'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+	withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Types of Gson are part of the public API (JsonElement results, readJSONFromBRHTTP),
+	// but the library does not force a Gson version on consumers: runtimes like Paper/Minecraft
+	// already provide it. Consumers that have no Gson add it themselves (see testRuntimeOnly).
+	compileOnlyApi 'com.google.code.gson:gson:2.13.2'
+	testRuntimeOnly 'com.google.code.gson:gson:2.13.2'
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+		}
+	}
+}
